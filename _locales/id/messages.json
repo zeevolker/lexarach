@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Lexarach — teman membaca"
+  },
+  "extDesc": {
+    "message": "Laba-laba robot pemakan kosakata yang hidup di browser Anda, mengingat semua yang Anda baca, dan membantu menemukannya lagi."
+  },
+  "actionTitle": {
+    "message": "Buka Lexarach"
+  },
+  "feedMenu": {
+    "message": "Beri makan Lexarach"
+  }
+}

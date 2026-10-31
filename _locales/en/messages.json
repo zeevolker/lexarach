@@ -1,0 +1,14 @@
+{
+  "extName": {
+    "message": "Lexarach — reading companion"
+  },
+  "extDesc": {
+    "message": "A word-eating robot spider that lives in your browser, remembers what you read, and helps you find it again."
+  },
+  "actionTitle": {
+    "message": "Open Lexarach"
+  },
+  "feedMenu": {
+    "message": "Feed Lexarach"
+  }
+}

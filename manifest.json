@@ -1,0 +1,66 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "version": "1.0.0",
+  "description": "__MSG_extDesc__",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "alarms",
+    "scripting",
+    "contextMenus"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "src/background/background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://*/*",
+        "https://*/*"
+      ],
+      "js": [
+        "src/shared/lang.js",
+        "src/shared/speech.js",
+        "src/content/insight.js",
+        "src/content/00-setup.js",
+        "src/content/01-body.js",
+        "src/content/02-senses.js",
+        "src/content/03-voice.js",
+        "src/content/04-feed.js",
+        "src/content/05-activity.js",
+        "src/content/06-motion.js",
+        "src/content/07-draw.js",
+        "src/content/08-life.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "__MSG_actionTitle__",
+    "default_popup": "src/popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png"
+    }
+  },
+  "default_locale": "id",
+  "commands": {
+    "feed-lexarach": {
+      "suggested_key": {
+        "default": "Alt+R",
+        "mac": "Alt+R"
+      },
+      "description": "__MSG_feedMenu__"
+    }
+  }
+}

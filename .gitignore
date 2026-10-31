@@ -1,0 +1,17 @@
+# Cadangan pribadi Lexarach (berisi riwayat bacaan)
+lexarach-cadangan-*.json
+lexarach-catatan-*.md
+renik-cadangan-*.json
+renik-catatan-*.md
+
+# Paket rilis
+*.zip
+*.crx
+*.pem
+
+# Sistem & editor
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/

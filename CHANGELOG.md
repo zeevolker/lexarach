@@ -1,5 +1,11 @@
 # Riwayat perubahan
 
+## 1.1.0 — 1 November 2026
+- **Kehadiran** di tab Status: *Aktif*, *Sembunyikan* (di semua situs, tetap mengingat halaman), dan *Nonaktifkan* (tidak muncul dan tidak membaca). Menu klik kanan ikut hilang saat nonaktif.
+- Pintasan **Alt+H** untuk menyembunyikan atau menampilkan Lexarach.
+- Lexarach bisa **diseret kapan saja**. Saat disentuh pointer ia berhenti dan menatap; saat diangkat, kakinya menjuntai.
+- Fitur **Tidurkan dihapus**. Proses merapikan ingatan kini berjalan otomatis tiap 30 menit.
+
 ## 1.0.0 — 31 Oktober 2026
 - **Ganti nama: Renik → Lexarach** (*lexicon* + *arachnid*). Ingatan lama tetap terbaca, dan cadangan lama tetap bisa diimpor.
 - Kode dipecah menjadi modul di `src/` (`content/`, `background/`, `popup/`, `shared/`).

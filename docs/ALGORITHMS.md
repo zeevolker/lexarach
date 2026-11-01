@@ -130,8 +130,8 @@ cepat ikut mendorongnya. Setelah itu ia memanjat sambil benang memendek.
 Gambar jaring dan posisi Lexarach dihitung dari satu nilai progres yang sama, jadi benang selalu
 keluar tepat dari nosel pemintal.
 
-## 10. Asosiasi saat tidur: kemiripan Jaccard
-`src/background/background.js` → `dreamCycle()` (alarm tiap 30 detik)
+## 10. Asosiasi berkala: kemiripan Jaccard
+`src/background/background.js` → `dreamCycle()` (alarm tiap 30 menit, diam-diam di latar belakang)
 
 Untuk kata "isi" (bukan kata umum, panjang ≥ 4), Lexarach mengumpulkan **tetangga**: kata yang muncul
 tepat sebelum atau sesudahnya. Dua kata dianggap berhubungan bila konteksnya mirip:

@@ -38,7 +38,8 @@ Lexarach bisa lapar, beristirahat, membersihkan diri, melompat, merajut jaring, 
 🔒 PRIVASI PENUH
 • Semua data tersimpan di komputer Anda. Tidak ada server, akun, analitik, atau pelacak.
 • Situs bank, surel, dan halaman login tidak dibaca sama sekali.
-• Atur per situs: normal, sembunyikan, atau matikan.
+• Aktifkan, sembunyikan (Alt+H), atau nonaktifkan untuk semua situs, atau atur per situs.
+• Seret Lexarach ke mana saja di layar.
 • Mode tidak mengganggu: meredup saat Anda mengetik dan bersembunyi saat menonton video.
 • Ekspor/impor cadangan kapan saja.
 
@@ -70,7 +71,8 @@ Lexarach gets hungry, rests, grooms, jumps, weaves webs and swings on a thread. 
 🔒 PRIVATE BY DESIGN
 • All data stays on your computer. No servers, accounts, analytics or trackers.
 • Banking, email and login pages are never read.
-• Per-site control: normal, hidden, or off.
+• Turn it on, hide it (Alt+H), or turn it off on all sites, or per site.
+• Drag Lexarach anywhere on screen.
 • Calm mode: dims while you type and hides during fullscreen video.
 • Export/import backups at any time.
 
@@ -99,7 +101,7 @@ Lexarach is a reading companion: it remembers the pages a user reads (keywords a
 | Izin | Isi kolom |
 |---|---|
 | `storage` | Stores the user's reading memory, notes and settings locally in chrome.storage.local. Nothing is sent off the device. |
-| `alarms` | Runs a periodic memory-consolidation task (every 30 seconds) only while the user has put Lexarach to sleep. |
+| `alarms` | Runs a local memory-consolidation task every 30 minutes (strengthens frequent words, fades rare ones, links related words). |
 | `scripting` | After install or update, injects the content scripts into tabs that were already open, so the user does not need to reload them. |
 | `contextMenus` | Adds the "Feed Lexarach" item to the right-click menu for selected text, which saves it as a note. |
 | Host permission (`http://*/*`, `https://*/*`) | The core feature reads the visible text of the pages the user reads, on any site the user chooses, to build the local reading memory and summaries. Users can disable it per site; banking, email and login pages are excluded. |

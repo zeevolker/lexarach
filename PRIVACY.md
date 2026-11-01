@@ -29,7 +29,7 @@ Ingatan halaman bisa dimatikan di **Pengaturan → Privasi**.
 - Menghapus extension akan menghapus semua datanya.
 
 ## Izin yang diminta
-`storage` (menyimpan memori), `alarms` (merapikan ingatan saat tidur), `scripting` (memasang ulang ke
+`storage` (menyimpan memori), `alarms` (merapikan ingatan secara berkala), `scripting` (memasang ulang ke
 tab yang sudah terbuka setelah pembaruan), `contextMenus` (menu klik kanan), dan akses ke halaman
 `http/https` (agar Lexarach bisa membaca teks halaman yang Anda kunjungi). Data dari izin ini tidak dibagikan,
 dijual, atau dipakai untuk tujuan lain.
@@ -53,5 +53,5 @@ your settings. Page memory can be turned off in **Settings → Privacy**.
 **Your control:** forget individual pages, edit or delete notes, erase all memory, and export/import a
 backup. Uninstalling the extension removes all of its data.
 
-**Permissions:** `storage`, `alarms`, `scripting`, `contextMenus`, and access to `http/https` pages are used
+**Permissions:** `storage`, `alarms` (periodic memory tidy-up), `scripting`, `contextMenus`, and access to `http/https` pages are used
 only for the features above. Data is never shared, sold, or used for any other purpose.

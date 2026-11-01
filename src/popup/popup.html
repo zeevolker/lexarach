@@ -29,7 +29,22 @@
     .sub { font: 10px var(--mono); color: var(--dim); letter-spacing: .06em; margin-top: 3px; }
     .sub b { color: var(--joint); font-weight: normal; }
     .state { font: 10px var(--mono); padding: 3px 7px; border: 1px solid var(--accent); color: var(--accent); letter-spacing: .1em; }
-    .state.sleep { border-color: var(--dim); color: var(--dim); }
+    .state.hidden { border-color: var(--joint); color: var(--joint); }
+    .state.off { border-color: #ff5b6e; color: #ff5b6e; }
+
+    /* ---------- Kehadiran: Aktif / Sembunyikan / Nonaktifkan ---------- */
+    .seg { display: flex; border: 1px solid var(--line); }
+    .seg button {
+      flex: 1; background: none; border: 0; border-right: 1px solid var(--line); color: var(--dim);
+      padding: 9px 4px; cursor: pointer; font: 10px var(--mono); letter-spacing: .08em; text-transform: uppercase;
+    }
+    .seg button:last-child { border-right: 0; }
+    .seg button:hover { color: var(--text); }
+    .seg button.on { color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); box-shadow: inset 0 -2px 0 var(--accent); }
+    .seg button.on[data-mode="hidden"] { color: var(--joint); background: color-mix(in srgb, var(--joint) 10%, transparent); box-shadow: inset 0 -2px 0 var(--joint); }
+    .seg button.on[data-mode="off"] { color: #ff5b6e; background: rgba(255,91,110,.08); box-shadow: inset 0 -2px 0 #ff5b6e; }
+    .seg button:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+    .hint { font: 11px/1.5 var(--mono); color: var(--dim); margin-top: 8px; }
 
     /* ---------- Tab ---------- */
     nav { display: flex; border-bottom: 1px solid var(--line); }
@@ -151,6 +166,15 @@
   <!-- STATUS -->
   <section id="tab-status" class="on">
     <div class="card">
+      <h3 data-i18n="presence"></h3>
+      <div class="seg" id="presence" role="radiogroup">
+        <button data-mode="normal" role="radio" data-i18n="modeOn"></button>
+        <button data-mode="hidden" role="radio" data-i18n="modeHidden"></button>
+        <button data-mode="off" role="radio" data-i18n="modeOff"></button>
+      </div>
+      <div class="hint" id="presenceHint"></div>
+    </div>
+    <div class="card">
       <h3 data-i18n="personality"></h3>
       <div id="traits"></div>
     </div>
@@ -173,9 +197,6 @@
     <div class="card">
       <h3><b data-i18n="interests" style="font-weight:normal"></b> <span data-i18n="interestsSub"></span></h3>
       <div class="chips" id="interests"></div>
-    </div>
-    <div class="row">
-      <button class="btn" id="sleep"></button>
     </div>
   </section>
 
@@ -208,6 +229,7 @@
         <option value="off" data-i18n="siteOff"></option>
       </select>
       <div class="muted" style="font-size:11px;margin-top:6px" data-i18n="siteNote"></div>
+      <div class="hint" id="siteOverride" style="color:var(--joint)"></div>
     </div>
   </section>
 

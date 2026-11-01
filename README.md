@@ -28,7 +28,7 @@
 | 💬 | **Gumaman** | Komentar kecil berdasarkan fakta: kata baru, bacaan lama yang mirip, lama membaca. |
 | 🕷️ | **Hidup** | Lapar, istirahat, membersihkan diri, melompat, merajut jaring, bergelantung; kepribadian berubah sesuai perlakuan Anda. |
 | 🔒 | **Privasi** | Semua data di komputer Anda. Tidak ada server, analitik, atau permintaan jaringan. Situs bank, surel, dan halaman login dilewati. |
-| 🎛️ | **Kendali** | Mode per situs (normal / sembunyi / mati), mode tidak mengganggu, warna kustom, cadangan JSON & Markdown. |
+| 🎛️ | **Kendali** | Aktif / sembunyikan / nonaktifkan untuk semua situs (Alt+H) atau per situs, mode tidak mengganggu, warna kustom, cadangan JSON & Markdown. |
 
 ![Popup Lexarach](docs/media/popup.png)
 
@@ -42,14 +42,15 @@
 > ⚠️ ID extension yang dimuat secara *unpacked* bergantung pada lokasi folder. Jangan memindahkan folder
 > setelah dipasang, atau ekspor cadangan dulu (Pengaturan → Cadangan).
 
-Pintasan **Alt+R** bisa diubah di `chrome://extensions/shortcuts`.
+Pintasan **Alt+R** (beri makan) dan **Alt+H** (sembunyikan/tampilkan) bisa diubah di `chrome://extensions/shortcuts`.
 
 ## Cara memakai
 
 - **Mencari bacaan lama**: klik ikon Lexarach → tab **Ingatan** → ketik kata.
 - **Menyimpan kutipan**: blok teks → *◆ Beri makan Lexarach* (atau Alt+R).
 - **Meringkas halaman**: tab **Halaman** → *Ringkas*, lalu *Tandai*.
-- **Memindahkan Lexarach**: tab Status → *Tidurkan*, lalu seret tubuhnya.
+- **Memindahkan Lexarach**: seret tubuhnya kapan saja. Saat disentuh pointer ia berhenti dan menatap Anda.
+- **Menyembunyikan / menonaktifkan**: tab Status → *Kehadiran*: Aktif, Sembunyikan (semua situs, pintasan **Alt+H**), atau Nonaktifkan.
 - **Mengelus**: gerakkan pointer pelan di dekatnya. Gerakan cepat ke arahnya akan mengagetkannya.
 
 ## Teknologi
@@ -64,7 +65,7 @@ JavaScript murni, tanpa *framework* atau *library*. Chrome Extension Manifest V3
 | Kaki | *Inverse kinematics* dua tulang (hukum kosinus), gaya berjalan tetrapod |
 | Kegiatan | Lompatan parabola, bandul teredam saat bergelantung, jaring tiga fase |
 | Sorotan | CSS Custom Highlight API (DOM halaman tidak diubah) |
-| Asosiasi | Kemiripan Jaccard saat "tidur" |
+| Asosiasi | Kemiripan Jaccard, dirapikan berkala di latar belakang |
 
 Penjelasan lengkap:
 - [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md): komponen, alur pesan, dan penyimpanan

@@ -39,8 +39,10 @@ function placeFromLive(live) {
 function updateDisplay() {
   const visible = alive && focused && siteMode() === 'normal' && calm !== 'media';
   canvas.style.display = visible ? 'block' : 'none';
-  canvas.style.opacity = asleep ? '0.55' : calm === 'typing' ? '0.15' : '1';
-  handle.style.display = visible && asleep ? 'block' : 'none'; // bisa diseret hanya saat tidur
+  canvas.style.opacity = calm === 'typing' ? '0.15' : '1';
+  // Pegangan untuk menyeret: tidak dipasang saat Anda mengetik (supaya tidak menghalangi).
+  handle.style.display = visible && calm !== 'typing' ? 'block' : 'none';
+  if (!visible || calm === 'typing') { hovered = false; if (dragging) endDrag(); }
   if (visible) startLoop();
 }
 function startLoop() {
@@ -94,19 +96,15 @@ function setFocused(v, from = null) {
   }
   if (from) pendingFrom = from;
   if (focused || appearTimer) return; // sudah terlihat, atau sedang menunggu muncul
-  const delay = asleep ? 0 : 600 + Math.random() * 1200;
+  const delay = 600 + Math.random() * 1200;
   appearTimer = setTimeout(() => {
     appearTimer = null;
     focused = true;
     chrome.storage.local.get('renikLive').then(r => {
       const live = r.renikLive;
-      if (asleep) {
-        if (live) placeFromLive(live);            // yang tidur tidak berjalan
-      } else {
-        // Arah dari otak; kalau tidak ada (mis. tab baru dibuka), dari tepi terdekat.
-        const side = pendingFrom ?? (live && live.x > 0.5 ? 'right' : 'left');
-        enterFrom(side, live);
-      }
+      // Arah dari otak; kalau tidak ada (mis. tab baru dibuka), dari tepi terdekat.
+      const side = pendingFrom ?? (live && live.x > 0.5 ? 'right' : 'left');
+      enterFrom(side, live);
       pendingFrom = null;
       updateDisplay();
       startLoop();
@@ -136,9 +134,10 @@ function loop(now) {
   if (!focused || siteMode() !== 'normal' || calm === 'media' || checkOrphan()) { looping = false; return; }
   const dt = Math.min(0.05, (now - last) / 1000); // detik sejak frame terakhir
   last = now;
-  if (alive && asleep) {
+  if (alive && dragging) {
     updateSpeech(now);
-    sleepStep(dt);
+    carryStep(dt, now);
+    placeHandle();
     draw(dt, now);
   } else if (alive) {
     if (calm === 'typing') { digestUntil = now + 250; target = null; } // sedang mengetik: diam
@@ -152,36 +151,58 @@ function loop(now) {
       updateLegs(dt);
       if (act.kind === 'groom' && !feedTarget && mode === 'GROOM') groomLegs(now);
     }
+    placeHandle();
     draw(dt, now);
   }
   requestAnimationFrame(loop);
 }
 
-// ---------- Diseret saat tidur ----------
-// Kanvas tidak bisa diklik (pointer-events: none), jadi saat tidur kita pasang
-// "pegangan" transparan kecil tepat di atas tubuh Lexarach.
+// ---------- Dipindah dengan diseret (kapan saja) ----------
+// Kanvas tidak bisa diklik (pointer-events: none), jadi kita pasang "pegangan" transparan
+// kecil tepat di atas tubuh Lexarach. Saat pointer menyentuhnya, ia berhenti dan menatap
+// pointer, jadi mudah ditangkap. Saat diangkat, kaki-kakinya menjuntai.
 const handle = document.createElement('div');
 handle.dataset.lexarach = '1';
 handle.title = 'Seret untuk memindahkan Lexarach';
 Object.assign(handle.style, {
-  position: 'fixed', width: '64px', height: '64px', borderRadius: '50%',
+  position: 'fixed', width: '44px', height: '44px', borderRadius: '50%',
   cursor: 'grab', zIndex: '2147483647', display: 'none', touchAction: 'none'
 });
-let dragging = null;
-const endDrag = () => {
+let dragging = null; // { dx, dy, t0 }
+let hovered = false; // pointer sedang di atas tubuhnya
+
+function placeHandle() {
+  const hs = 44 * Math.max(0.8, size);
+  handle.style.width = handle.style.height = hs + 'px';
+  handle.style.left = body.x - hs / 2 + 'px';
+  handle.style.top = body.y - hs / 2 + 'px';
+}
+
+function endDrag() {
   if (!dragging) return;
   dragging = null;
+  hovered = false;
   handle.style.cursor = 'grab';
-  // Ingat posisinya (dalam persen layar), dipakai juga di halaman berikutnya.
-  saveLive();
-  changeMood('boldness', -0.004); // dibangunkan paksa & dipindah: sedikit kurang berani
-};
+  // Mendarat: kaki diatur ulang di posisi baru, diam sebentar sebelum lanjut.
+  for (const leg of legs) { leg.foot = null; leg.from = null; leg.t = 1; leg.lastWindow = -1; }
+  vel.x = vel.y = speedNow = 0;
+  digestUntil = performance.now() + 700;
+  saveLive(); // ingat posisinya (dalam persen layar), dipakai juga di tab berikutnya
+}
 
 function initDrag() {
+  handle.addEventListener('pointerenter', () => { hovered = true; });
+  handle.addEventListener('pointerleave', () => { if (!dragging) hovered = false; });
   handle.addEventListener('pointerdown', e => {
-    dragging = { dx: body.x - e.clientX, dy: body.y - e.clientY };
+    const now = performance.now();
+    // Sedang melompat / bergelantung: langsung "ditangkap".
+    if (AIRBORNE.has(act.kind) || act.kind === 'web') act = newAct('rest', now);
+    target = null;
+    entering = null;
+    dragging = { dx: body.x - e.clientX, dy: body.y - e.clientY, t0: now };
     handle.setPointerCapture(e.pointerId);
     handle.style.cursor = 'grabbing';
+    say(T('grabbed'), { key: 'grab' });
     e.preventDefault();
   });
   handle.addEventListener('pointermove', e => {
@@ -193,56 +214,29 @@ function initDrag() {
   handle.addEventListener('pointercancel', endDrag);
 }
 
-
-// Tidur: diam di tempat, kaki ditekuk rapat ke tubuh.
-function sleepStep(dt) {
-  mode = dragging ? 'MOVE' : 'DREAM';
-  if (AIRBORNE.has(act.kind)) {                    // tertidur saat di udara: langsung kembali ke tanah
-    if (act.kind === 'hang') { body.x = act.data.anchor.x; body.y = act.data.anchor.y; }
-    if (act.kind === 'jump') { body.x = act.data.to.x; body.y = act.data.to.y; }
-    act = newAct('rest', performance.now());
-  }
-  const hs = 64 * Math.max(0.8, size);
-  handle.style.width = handle.style.height = hs + 'px';
-  handle.style.left = body.x - hs / 2 + 'px';
-  handle.style.top = body.y - hs / 2 + 'px';
-  target = null; // orang tidur tidak berburu
+// Saat diangkat: tubuh berputar menghadap ke atas, kaki depan terangkat,
+// kaki lain menjuntai ke bawah (gravitasi layar) sambil sedikit meronta.
+const DANGLE = [[30, -28], [40, 2], [36, 28], [22, 48]]; // [ke samping, ke bawah] per pasang kaki
+function carryStep(dt, now) {
+  mode = 'MOVE';
   vel.x = vel.y = speedNow = 0;
+  heading += angleDiff(-Math.PI / 2, heading) * Math.min(1, dt * 8);
   for (const leg of legs) {
-    const ang = heading + leg.side * LEG_ANGLE[leg.i];
-    const reach = LEG_REACH[leg.i] * size * 0.45;
-    const curl = { x: body.x + Math.cos(ang) * reach, y: body.y + Math.sin(ang) * reach };
-    if (!leg.foot) leg.foot = { ...curl };
-    leg.foot.x += (curl.x - leg.foot.x) * Math.min(1, dt * (dragging ? 8 : 2));
-    leg.foot.y += (curl.y - leg.foot.y) * Math.min(1, dt * 2);
+    const hip = hipOf(leg), [sx, dy] = DANGLE[leg.i];
+    const kick = Math.sin(now / 110 + leg.i * 1.9 + leg.side * 0.8) * 4;
+    const want = { x: hip.x + leg.side * (sx + kick) * size, y: hip.y + (dy + kick * 0.5) * size };
+    if (!leg.foot) leg.foot = { ...want };
+    leg.foot.x += (want.x - leg.foot.x) * Math.min(1, dt * 10);
+    leg.foot.y += (want.y - leg.foot.y) * Math.min(1, dt * 10);
     leg.t = 1;
   }
 }
 
 function setAlive(state) {
-  const first = memory === null;
-  const wasAsleep = asleep;
-  const now = performance.now();
   memory = state;
   if (state) state.stats ??= { wordsEaten: 0 };
   alive = !!state;
-  asleep = !!state?.sleeping;
   updateDisplay();
-  if (!state) return;
-
-  if (asleep && !wasAsleep) { target = null; if (!first) speech = null; }
-
-  // Mimpi baru? Tampilkan selagi tidur.
-  const latest = state.dreams?.[0];
-  if (latest && latest.at > lastDreamAt) {
-    lastDreamAt = latest.at;
-  }
-
-  // Baru bangun: menggeliat dulu sebelum jalan.
-  if (wasAsleep && !asleep) {
-    say(T('woke'), { force: true });
-    digestUntil = now + 1500;
-  }
 }
 
 function boot(state) {
@@ -258,7 +252,7 @@ function boot(state) {
   // Memindai dijalankan saat browser sedang senggang, supaya animasi tidak tersendat.
   const idle = window.requestIdleCallback ?? (fn => setTimeout(fn, 0));
   setInterval(() => {
-    if (!alive || asleep || !focused || siteMode() !== 'normal' || calm || checkOrphan()) return; // tidak sedang aktif = tidak makan
+    if (!alive || dragging || !focused || siteMode() !== 'normal' || calm || checkOrphan()) return; // tidak sedang aktif = tidak makan
     idle(() => {
       detectTheme();
       scanVisibleWords();
@@ -268,7 +262,7 @@ function boot(state) {
   setInterval(() => { if (checkOrphan()) return; flush(); if (focused) saveLive(); }, 4000);
   // Waktu baca dihitung per detik (juga saat Lexarach disembunyikan), untuk mencatat halaman.
   setInterval(() => {
-    if (focused && !document.hidden && !asleep && siteMode() !== 'off') tickReading(1);
+    if (focused && !document.hidden && siteMode() !== 'off') tickReading(1);
   }, 1000);
   // Mode tidak mengganggu diperiksa dua kali per detik.
   setInterval(checkCalm, 500);

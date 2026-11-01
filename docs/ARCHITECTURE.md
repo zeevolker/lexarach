@@ -22,7 +22,7 @@ flowchart LR
     IDX[Indeks halaman<br/>RECALL]
     NOTE[Catatan]
     ACT[Tab aktif<br/>setActive]
-    DR[dreamCycle<br/>alarm 30 dtk]
+    DR[dreamCycle<br/>alarm 30 menit]
   end
   P[Popup<br/>popup.html / popup.js]
   ST[(chrome.storage.local)]
@@ -58,7 +58,7 @@ hanya bergantung pada file sebelumnya; hanya `08-life.js` yang menjalankan `main
 | `05-activity.js` | Rasa lapar, pemilihan kegiatan, lompat, jaring, bergelantung |
 | `06-motion.js` | Mesin keputusan gerak per bingkai, reaksi pointer, kaget/dielus |
 | `07-draw.js` | Palet warna, jaring, benang, robot, panel HUD |
-| `08-life.js` | Fokus tab, masuk dari tepi layar, loop animasi, seret saat tidur, pesan dari popup/background |
+| `08-life.js` | Fokus tab, masuk dari tepi layar, loop animasi, diseret kapan saja, pesan dari popup/background |
 | `insight.js` | `LexarachInsight`: ringkasan TF-IDF, indeks halaman, sorotan |
 
 `src/shared/lang.js` (stemmer) dan `src/shared/speech.js` dipakai **content script dan service worker**
@@ -87,7 +87,7 @@ memiliki penanda `window.__lexarachInjected`, untuk mencegah injeksi ganda.
 | `renikPages` | local | Indeks halaman (maks. 400): judul, URL tanpa query, kata kunci, cuplikan |
 | `renikNotes` | local | Catatan (maks. 500, 3000 karakter) |
 | `renikStyle` | local | Warna |
-| `renikPrefs` | local | Bahasa, mode situs, mode tidak mengganggu, ingatan halaman aktif/tidak |
+| `renikPrefs` | local | Bahasa, kehadiran global (`global`), mode situs, mode tidak mengganggu, ingatan halaman aktif/tidak |
 | `renikLive` | local | Posisi & arah terakhir (untuk perpindahan tab) |
 | `activeTab`, tanda sorot | session | Tab yang dihuni; kalimat yang menunggu disorot (kedaluwarsa 60 dtk) |
 
@@ -102,7 +102,7 @@ lama tetap terbaca setelah ganti nama.
 | Izin | Alasan |
 |---|---|
 | `storage` | Menyimpan memori di komputer pengguna |
-| `alarms` | Siklus "tidur" (merapikan ingatan) tiap 30 detik |
+| `alarms` | Merapikan ingatan (konsolidasi & asosiasi kata) tiap 30 menit |
 | `scripting` | Memasang ulang Lexarach ke tab yang sudah terbuka setelah pembaruan |
 | `contextMenus` | Menu klik kanan *Beri makan Lexarach* |
 | host `http/https` | Lexarach perlu membaca teks halaman yang Anda kunjungi |

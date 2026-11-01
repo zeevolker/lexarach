@@ -20,7 +20,7 @@ function feedSelection(text, range = null) {
     type: 'ADD_NOTE', text,
     page: { url: location.origin + location.pathname, title: document.title.slice(0, 160) }
   }).catch(() => {});
-  if (!focused || asleep || siteMode() !== 'normal') return; // tetap tersimpan, hanya tanpa animasi
+  if (!focused || siteMode() !== 'normal') return; // tetap tersimpan, hanya tanpa animasi
   target = null;
   feedTarget = { range, text };
 }

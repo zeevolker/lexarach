@@ -10,5 +10,8 @@
   },
   "feedMenu": {
     "message": "Beri makan Lexarach"
+  },
+  "hideCmd": {
+    "message": "Tampilkan / sembunyikan Lexarach di semua situs"
   }
 }

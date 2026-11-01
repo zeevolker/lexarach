@@ -57,7 +57,6 @@ function newCreature() {
   return {
     born: Date.now(),
     species: makeSpecies(personality),
-    sleeping: false,
     personality,
     words: {},        // { kata: { count, strength, lastSeen } }
     stats: { wordsEaten: 0, pagesVisited: 0, sites: {} }
@@ -100,6 +99,7 @@ function update(mutator, touched = ['core']) {
     const r = await chrome.storage.local.get(Object.values(KEYS));
     const state = r.renik ?? newCreature();
     if (!state.species) state.species = makeSpecies(state.personality); // untuk Lexarach versi lama
+    delete state.sleeping; delete state.sleptAt; // fitur tidur sudah dihapus (1.1.0)
 
     // Migrasi dari versi lama (semua tersimpan di "renik")
     let migrated = false;
@@ -160,9 +160,9 @@ function onAte(state, now, words) {
 }
 
 // ============================================================
-// MIMPI — berjalan saat Lexarach ditidurkan
+// MERAPIKAN INGATAN ("mimpi") — berjalan diam-diam di latar belakang
 // ------------------------------------------------------------
-// Setiap 30 detik selama tidur, satu siklus mimpi:
+// Setiap 30 menit, satu siklus:
 //   1. Konsolidasi: kenangan terkuat diperkuat, yang lemah lebih cepat pudar
 //   2. Asosiasi: kata yang punya "tetangga" sama dianggap mirip lalu dihubungkan
 //   3. Jurnal: hubungan kata baru yang ditemukan dicatat
@@ -242,16 +242,19 @@ function dreamCycle(state, now) {
   state.stats.dreams = (state.stats.dreams ?? 0) + 1;
 }
 
-function startDreaming() {
-  chrome.alarms.create(DREAM_ALARM, { periodInMinutes: 0.5 });
+// Dijadwalkan ulang setiap browser dibuka / extension dipasang (create dengan nama yang sama
+// hanya mengganti jadwal lama, jadi aman dipanggil berkali-kali).
+function scheduleDreams() {
+  chrome.alarms.create(DREAM_ALARM, { delayInMinutes: 5, periodInMinutes: 30 });
 }
+chrome.runtime.onStartup.addListener(scheduleDreams);
 
 chrome.alarms.onAlarm.addListener(alarm => {
   if (alarm.name !== DREAM_ALARM) return;
   update((s, now) => {
-    if (!s.sleeping) { chrome.alarms.clear(DREAM_ALARM); return; }
+    if (Object.keys(s.words ?? {}).length < 20) return; // belum cukup bahan
     dreamCycle(s, now);
-  }); // mimpi hanya mengubah inti (kata, hubungan, jurnal)
+  }); // hanya mengubah inti (kata, hubungan, jurnal)
 });
 
 // ---------- Ingatan halaman (untuk fitur "Cari di ingatan") ----------
@@ -291,11 +294,21 @@ function notesOp(fn) {
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 // ---------- Menu klik kanan: "Beri makan Lexarach" ----------
-function setupContextMenu() {
+async function setupContextMenu() {
+  // Saat Lexarach dinonaktifkan, menu klik kanannya ikut disembunyikan.
+  const { renikPrefs = {} } = await chrome.storage.local.get('renikPrefs');
   chrome.contextMenus.removeAll(() => {
-    chrome.contextMenus.create({ id: 'lexarach-feed', title: chrome.i18n.getMessage('feedMenu'), contexts: ['selection'] });
+    chrome.contextMenus.create({
+      id: 'lexarach-feed', title: chrome.i18n.getMessage('feedMenu'), contexts: ['selection'],
+      visible: renikPrefs.global !== 'off'
+    });
   });
 }
+chrome.storage.onChanged.addListener((ch, area) => {
+  if (area !== 'local' || !ch.renikPrefs) return;
+  const off = ch.renikPrefs.newValue?.global === 'off';
+  chrome.contextMenus.update('lexarach-feed', { visible: !off }).catch?.(() => {});
+});
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== 'lexarach-feed' || !tab?.id) return;
   chrome.tabs.sendMessage(tab.id, { type: 'FEED_SELECTION', text: info.selectionText ?? '' }).catch(() => {});
@@ -303,6 +316,14 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 
 // ---------- Pintasan keyboard: Alt+R = beri makan Lexarach teks yang sedang diblok ----------
 chrome.commands.onCommand.addListener(async command => {
+  // Alt+H: tampilkan / sembunyikan Lexarach di semua situs.
+  if (command === 'toggle-hide') {
+    const { renikPrefs = {} } = await chrome.storage.local.get('renikPrefs');
+    if (renikPrefs.global === 'off') return; // sedang nonaktif: aktifkan lewat menu
+    renikPrefs.global = renikPrefs.global === 'hidden' ? 'normal' : 'hidden';
+    await chrome.storage.local.set({ renikPrefs });
+    return;
+  }
   if (command !== 'feed-lexarach') return;
   const [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
   if (tab?.id) chrome.tabs.sendMessage(tab.id, { type: 'FEED_SELECTION_CURRENT' }).catch(() => {});
@@ -356,6 +377,7 @@ chrome.windows.onFocusChanged.addListener(async windowId => {
 // supaya tidak perlu refresh satu per satu (skrip baru juga membersihkan versi lama).
 const CONTENT_FILES = chrome.runtime.getManifest().content_scripts[0].js;
 chrome.runtime.onInstalled.addListener(async details => {
+  scheduleDreams();
   chrome.alarms.clear('renik-dream'); // nama alarm sebelum ganti nama
   update(() => {});
   setupContextMenu();
@@ -464,22 +486,12 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
     }
     case 'INDEX': job = update((s, now) => indexPage(s, now, msg), ['pages']).then(() => ({ ok: true })); break;
     case 'MOOD': {
-      // Perubahan kecil kepribadian karena interaksi (dikagetkan / dielus / diseret).
+      // Perubahan kecil kepribadian karena interaksi (dikagetkan / dielus).
       const ok = ['curiosity', 'boldness', 'energy'].includes(msg.trait) && Math.abs(msg.delta) <= 0.02;
       job = update(s => { if (ok) s.personality[msg.trait] = clamp(s.personality[msg.trait] + msg.delta); })
         .then(() => ({ ok }));
       break;
     }
-    case 'SLEEP': job = update((s, now) => {
-      s.sleeping = !!msg.value;
-      if (s.sleeping) {
-        s.sleptAt = now;
-        dreamCycle(s, now);  // mimpi pertama langsung
-        startDreaming();     // lalu tiap 30 detik
-      } else {
-        chrome.alarms.clear(DREAM_ALARM);
-      }
-    }).then(forBody); break;
     case 'RESET': job = update(s => {
       for (const k of Object.keys(s)) delete s[k];
       Object.assign(s, newCreature(), { chain: {}, pages: [] });

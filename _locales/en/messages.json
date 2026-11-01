@@ -10,5 +10,8 @@
   },
   "feedMenu": {
     "message": "Feed Lexarach"
+  },
+  "hideCmd": {
+    "message": "Show / hide Lexarach on all sites"
   }
 }

@@ -400,7 +400,7 @@ function draw(dt, now) {
   ctx.fillStyle = c.accent;
   ctx.font = `9px ${MONO}`;
   const cursor = now % 1000 < 500 ? '_' : ' ';
-  ctx.fillText(`> ${modeLabel(asleep ? mode : speech ? 'TX' : mode)}${cursor}`, left + 6, hy + 25);
+  ctx.fillText(`> ${modeLabel(dragging ? 'MOVE' : speech ? 'TX' : mode)}${cursor}`, left + 6, hy + 25);
   // transmisi (kalimat yang diucapkan)
   if (lines.length) {
     ctx.fillStyle = c.joint;

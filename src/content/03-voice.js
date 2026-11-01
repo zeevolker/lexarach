@@ -26,7 +26,7 @@ let pageTerms = [];        // kata kunci halaman ini (dari indexNow)
 
 function say(text, { key = null, force = false } = {}) {
   const now = performance.now();
-  if (!text || asleep) return;
+  if (!text) return;
   if (key && saidHere.has(key)) return;
   if (!force && now - lastSayAt < 9000) return;
   if (key) saidHere.add(key);
@@ -54,7 +54,7 @@ function topInterests() {
 
 function updateSpeech(now) {
   if (speech && now > speech.until) speech = null;
-  if (asleep || entering || speech || now < nextMurmur) return;
+  if (entering || speech || now < nextMurmur) return;
   nextMurmur = now + 25000 + Math.random() * 30000;
   // Pilih gumaman pertama yang memang sesuai keadaan sekarang.
   const minutes = Math.floor(readTime / 60);

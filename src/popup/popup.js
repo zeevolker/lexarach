@@ -16,7 +16,7 @@ const strength = (d, now) => d.strength * Math.pow(0.5, (now - d.lastSeen) / HAL
 
 let state = null;   // memori Lexarach (gabungan inti + bahasa + halaman)
 let style = null;   // warna
-let prefs = {};     // { lang, rememberPages }
+let prefs = {};     // { lang, rememberPages, calm, sites, global }
 
 // ============================================================
 // TEKS DUA BAHASA
@@ -24,7 +24,7 @@ let prefs = {};     // { lang, rememberPages }
 const I18N = {
   id: {
     tabStatus: 'Status', tabMemory: 'Ingatan', tabNotes: 'Catatan', tabPage: 'Halaman', tabSettings: 'Pengaturan',
-    awake: 'TERJAGA', dreaming: 'TIDUR', age: 'Usia', newborn: 'Baru lahir',
+    stOn: 'AKTIF', stHidden: 'TERSEMBUNYI', stOff: 'NONAKTIF', age: 'Usia', newborn: 'Baru lahir',
     justNow: 'baru saja', min: n => `${n} menit`, hour: n => `${n} jam`, day: n => `${n} hari`, ago: t => `${t} yang lalu`,
     personality: 'Kepribadian', curiosity: 'Rasa ingin tahu', boldness: 'Keberanian', energy: 'Energi',
     statWords: 'KATA', statPages: 'HALAMAN', statToday: 'HARI INI',
@@ -32,7 +32,11 @@ const I18N = {
     weekDays: 'HARI MEMBACA', weekEmpty: 'Belum ada bacaan dalam 7 hari terakhir.',
     interests: 'Minat Anda', interestsSub: '· topik yang paling sering Anda baca',
     interestsEmpty: 'Belum ada. Ajak Lexarach menjelajah terlebih dahulu.',
-    sleep: 'Tidurkan', wake: 'Bangunkan',
+    presence: 'Kehadiran', modeOn: 'Aktif', modeHidden: 'Sembunyikan', modeOff: 'Nonaktifkan',
+    siteOverride: m => `Saat ini Kehadiran di tab Status diatur ke “${m}” untuk semua situs, jadi pengaturan itu yang berlaku.`,
+    hintOn: 'Lexarach berkeliaran dan membaca bersama Anda. Seret tubuhnya untuk memindahkannya.',
+    hintHidden: 'Tidak terlihat di semua situs, tapi tetap mengingat halaman dan menerima catatan. Pintasan: Alt+H.',
+    hintOff: 'Tidak muncul dan tidak membaca apa pun di semua situs. Ingatan dan catatan Anda tetap aman.',
     searchPh: 'Di mana saya pernah membaca tentang…',
     stored: n => `${n} HALAMAN TERSIMPAN DALAM INGATAN`, matches: n => `${n} HALAMAN COCOK`, notFound: 'TIDAK DITEMUKAN DALAM INGATAN',
     noPages: 'Belum ada halaman. Lexarach mencatat setiap halaman yang Anda baca lebih dari beberapa detik.',
@@ -70,7 +74,7 @@ const I18N = {
   },
   en: {
     tabStatus: 'Status', tabMemory: 'Memory', tabNotes: 'Notes', tabPage: 'Page', tabSettings: 'Settings',
-    awake: 'AWAKE', dreaming: 'ASLEEP', age: 'Age', newborn: 'Just born',
+    stOn: 'ACTIVE', stHidden: 'HIDDEN', stOff: 'OFF', age: 'Age', newborn: 'Just born',
     justNow: 'just now', min: n => `${n} min`, hour: n => `${n} h`, day: n => `${n} d`, ago: t => `${t} ago`,
     personality: 'Personality', curiosity: 'Curiosity', boldness: 'Boldness', energy: 'Energy',
     statWords: 'WORDS', statPages: 'PAGES', statToday: 'TODAY',
@@ -78,7 +82,11 @@ const I18N = {
     weekDays: 'READING DAYS', weekEmpty: 'No reading in the last 7 days.',
     interests: 'Your interests', interestsSub: '· topics you read most',
     interestsEmpty: 'Nothing yet. Take Lexarach browsing first.',
-    sleep: 'Put to sleep', wake: 'Wake up',
+    presence: 'Presence', modeOn: 'Active', modeHidden: 'Hide', modeOff: 'Turn off',
+    siteOverride: m => `Presence on the Status tab is set to “${m}” for all sites, so that setting applies.`,
+    hintOn: 'Lexarach roams and reads along with you. Drag its body to move it.',
+    hintHidden: 'Invisible on every site, but still remembers pages and accepts notes. Shortcut: Alt+H.',
+    hintOff: 'Does not appear or read anything on any site. Your memory and notes stay safe.',
     searchPh: 'Where did I read about…',
     stored: n => `${n} PAGES IN MEMORY`, matches: n => `${n} MATCHING PAGES`, notFound: 'NOT FOUND IN MEMORY',
     noPages: 'No pages yet. Lexarach records every page you read for more than a few seconds.',
@@ -218,9 +226,7 @@ function renderStatus() {
   const lived = now - s.born < 60000 ? T('newborn') : `${T('age')} ${age(now - s.born)}`;
   $('species').textContent = s.species ?? 'Lexarach';
   $('sub').textContent = lived.toUpperCase();
-  $('state').textContent = s.sleeping ? T('dreaming') : T('awake');
-  $('state').classList.toggle('sleep', !!s.sleeping);
-  $('sleep').textContent = s.sleeping ? T('wake') : T('sleep');
+  renderPresence();
 
   $('traits').innerHTML = TRAITS.map(k => {
     const v = s.personality[k];
@@ -265,7 +271,22 @@ function renderStatus() {
   });
 }
 
-$('sleep').onclick = () => chrome.runtime.sendMessage({ type: 'SLEEP', value: !state.sleeping });
+// Kehadiran global: 'normal' (aktif) / 'hidden' (sembunyi di semua situs) / 'off' (nonaktif).
+function renderPresence() {
+  const g = prefs.global ?? 'normal';
+  const key = { normal: 'On', hidden: 'Hidden', off: 'Off' }[g];
+  $('state').textContent = T('st' + key);
+  $('state').className = 'state ' + (g === 'normal' ? '' : g);
+  $('presenceHint').textContent = T('hint' + key);
+  for (const b of $('presence').querySelectorAll('button')) {
+    const on = b.dataset.mode === g;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-checked', on);
+  }
+}
+for (const b of $('presence').querySelectorAll('button')) {
+  b.onclick = () => { savePrefs({ global: b.dataset.mode }); renderPresence(); };
+}
 
 // ============================================================
 // INGATAN: "Di mana saya pernah membaca tentang …"
@@ -586,6 +607,11 @@ async function initSiteCard() {
   $('siteHost').textContent = '· ' + (siteHost ? siteHost.replace(/^www\./, '') : T('siteNA'));
   $('siteMode').disabled = !siteHost;
   $('siteMode').value = (siteHost && prefs.sites?.[siteHost]) || 'normal';
+  renderSiteOverride();
+}
+function renderSiteOverride() {
+  const g = prefs.global ?? 'normal';
+  $('siteOverride').textContent = g === 'normal' ? '' : T('siteOverride', T(g === 'off' ? 'modeOff' : 'modeHidden'));
 }
 $('siteMode').onchange = e => {
   const sites = { ...(prefs.sites ?? {}) };
@@ -703,6 +729,7 @@ chrome.storage.local.get(['renik', 'renikLang', 'renikPages', 'renikStyle', 'ren
 });
 
 chrome.storage.onChanged.addListener(ch => {
+  if (ch.renikPrefs) { prefs = ch.renikPrefs.newValue ?? {}; renderPresence(); renderSiteOverride(); }
   if (ch.renikNotes) { notes = ch.renikNotes.newValue ?? []; renderNotes(); if (state) renderStatus(); }
   if (!state && !ch.renik) return;
   if (ch.renik) state = merge(ch.renik.newValue, { chain: state?.chain, chain2: state?.chain2, seen: state?.seen }, state?.pages);

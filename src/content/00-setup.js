@@ -6,7 +6,7 @@
 
 // Versi kode ini. Harus sama dengan "version" di manifest.json.
 // Popup memakai ini untuk mendeteksi kalau tab menjalankan kode lama.
-const BUILD = '1.0.0';
+const BUILD = '1.1.0';
 
 
 // ==========================================================
@@ -50,8 +50,6 @@ const STOPWORDS = new Set((
 // ==========================================================
 let memory = null;     // salinan memori dari otak
 let alive = false;     // true kalau sudah siap
-let asleep = false;    // sedang tidur & bermimpi (tidak membaca halaman)
-let lastDreamAt = 0;   // mimpi terakhir yang sudah ditampilkan
 let prefs = {};        // pengaturan dari menu (kunci "renikPrefs")
 
 // ---------- Teks dua bahasa (dipilih di menu Pengaturan) ----------
@@ -59,7 +57,7 @@ const STR = {
   id: {
     core: 'ini inti halamannya',
     found: 'ini yang kamu cari',
-    woke: 'sudah bangun. ingatanku sudah kurapikan',
+    grabbed: 'eh, mau dibawa ke mana?',
     feedBtn: 'Beri makan Lexarach',
     webDone: 'jaringku sudah jadi',
     startled: 'kaget!',
@@ -78,14 +76,14 @@ const STR = {
     newSignal: 'SINYAL BARU',
     known: n => `DIKENAL ×${n}`,
     modes: { WANDER: 'JELAJAH', HUNT: 'BURU', DIGEST: 'CERNA', APPROACH: 'MENDEKAT', FLEE: 'KABUR',
-             ENTER: 'MASUK', DREAM: 'TIDUR', MOVE: 'PINDAH', TX: 'BERGUMAM', FEED: 'MAKAN',
+             ENTER: 'MASUK', MOVE: 'DIPINDAH', TX: 'BERGUMAM', FEED: 'MAKAN',
              WAIT: 'RAGU', SNEAK: 'MENGENDAP', REST: 'ISTIRAHAT', GROOM: 'MEMBERSIHKAN', LOOK: 'MENGAMATI',
              JUMP: 'MELOMPAT', WEB: 'MERAJUT', HANG: 'BERGELANTUNG', CLIMB: 'MEMANJAT' }
   },
   en: {
     core: 'this is the core of the page',
     found: 'here is what you were looking for',
-    woke: 'awake. i tidied up my memory',
+    grabbed: 'hey, where are we going?',
     feedBtn: 'Feed Lexarach',
     webDone: 'my web is done',
     startled: 'startled!',
@@ -104,7 +102,7 @@ const STR = {
     newSignal: 'NEW SIGNAL',
     known: n => `KNOWN ×${n}`,
     modes: { WANDER: 'WANDER', HUNT: 'HUNT', DIGEST: 'DIGEST', APPROACH: 'APPROACH', FLEE: 'FLEE',
-             ENTER: 'ENTER', DREAM: 'SLEEP', MOVE: 'MOVE', TX: 'MURMUR', FEED: 'FEED',
+             ENTER: 'ENTER', MOVE: 'CARRIED', TX: 'MURMUR', FEED: 'FEED',
              WAIT: 'WAIT', SNEAK: 'SNEAK', REST: 'REST', GROOM: 'GROOM', LOOK: 'LOOK',
              JUMP: 'JUMP', WEB: 'WEAVE', HANG: 'HANG', CLIMB: 'CLIMB' }
   }
@@ -121,7 +119,14 @@ const modeLabel = m => STR[uiLang()].modes[m] ?? m;
 //   'hidden' : Lexarach tidak terlihat, tapi halaman tetap diingat & bisa diberi catatan
 //   'off'    : Lexarach tidak masuk sama sekali (tidak membaca, tidak mengingat)
 const HOST = location.hostname;
-const siteMode = () => prefs.sites?.[HOST] ?? 'normal';
+// Mode global (tombol di tab Status) mengalahkan mode per situs:
+// 'off' di salah satunya = mati; 'hidden' di salah satunya = tersembunyi.
+const siteMode = () => {
+  const g = prefs.global ?? 'normal', s = prefs.sites?.[HOST] ?? 'normal';
+  if (g === 'off' || s === 'off') return 'off';
+  if (g === 'hidden' || s === 'hidden') return 'hidden';
+  return 'normal';
+};
 
 // ---------- Mode tidak mengganggu (bisa dimatikan di Pengaturan) ----------
 //   'typing' : Anda sedang mengetik -> Lexarach diam & sangat redup

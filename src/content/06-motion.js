@@ -99,7 +99,11 @@ function updateBody(dt, now) {
   // Pointer yang diam dianggap tidak terlalu mengancam.
   const reactRadius = pointerIdle ? 90 : 160;
 
-  if (feedTarget && !entering) {
+  if (hovered && !entering && now - lastMouseMove < 1500) {
+    // Pointer menyentuh tubuhnya: berhenti dan menatap, jadi mudah ditangkap & diseret.
+    mode = 'LOOK';
+    faceTo = mouse;
+  } else if (feedTarget && !entering) {
     // Diberi makan: merayap ke teks yang Anda blok, lalu memakannya.
     const r = feedTarget.range?.getBoundingClientRect();
     if (!r || r.width === 0 || r.bottom < 0 || r.top > innerHeight) {
